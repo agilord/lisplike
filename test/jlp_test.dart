@@ -14,4 +14,43 @@ void main() {
     final res = evl.run().toList();
     expect(res, [18.1]);
   });
+
+  group('lisplike', () {
+    test('add', () {
+      final res = Evaluator(['add', 8, 9.1]).run().toList();
+      expect(res, [17.1]);
+    });
+
+    test('multi-level add', () {
+      final res = Evaluator([
+        'add',
+        ['add', 1, 7],
+        [
+          'add',
+          ['add', 8, 1],
+          0.1,
+        ],
+      ]).run().toList();
+      expect(res, [17.1]);
+    });
+
+    test('list', () {
+      final res = Evaluator(['list', 1, true, 'text']).run().toList();
+      expect(res, [1, true, 'text']);
+    });
+
+    test('multi-level list', () {
+      final res = Evaluator([
+        'list',
+        1,
+        true,
+        ['list', 'text', 1.0],
+      ]).run().toList();
+      expect(res, [
+        1,
+        true,
+        ['text', 1.0]
+      ]);
+    });
+  });
 }
