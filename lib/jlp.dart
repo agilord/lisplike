@@ -12,68 +12,70 @@ class Adder extends Func {
   }
 }
 
-
 class Evaluator {
   Stream data = Stream.empty();
-  List prog;
+  dynamic prog;
   List scratch;
   Evaluator._(this.prog, this.scratch);
-  factory Evaluator(List prog, [List? scratch]) {
+  factory Evaluator(prog, [List? scratch]) {
     return Evaluator._(prog, scratch ?? []);
   }
 
-  Iterable run([Stream? data]) sync* {
-    if(data != null) this.data = data;
+  run([Stream? data]) {
+    if (data != null) this.data = data;
+    return eval(prog);
     scratch = [];
-    for(final stm in prog) {
-      scratch.addAll(eval(stm));
+    for (final stm in prog) {
+      scratch.add(eval(stm));
     }
-    yield* scratch;
+    return scratch;
   }
 
-  Iterable eval(elem) sync*{
-    if(elem is String) {
-      yield* parseSpec(elem);
+  eval(elem) {
+    if (elem is String) {
+      //yield* parseSpec(elem);
+      return elem;
     }
-    if(elem is num) {
-      print(elem.runtimeType);
-      yield elem;
+    if (elem is num) {
+      //print(elem.runtimeType); // can be int or double
+      return elem;
     }
-    if(elem is bool) {
-      yield elem;
+    if (elem is bool) {
+      return elem;
     }
-    if(elem == null) {
-      return;
+    if (elem == null) {
+      return elem;
     }
-    if(elem is List) {
-      // Code block
-      final neva = Evaluator(elem);
-      yield* neva.run(data);
+    if (elem is Map) {
+      return elem;
     }
-    if(elem is Map) {
-      final name = elem["call"];
-      final pars = elem["pars"];
-      yield* funcall(name, pars);
+    if (elem is List) {
+      final name = elem.first;
+      final pars = elem.sublist(1);
+      return funcall(name, pars);
     }
   }
 
-  funcall(name, pars) sync* {
-    if(name == 'pars') yield pars;
-    if(name == 'add') yield eval(pars['rhs']).first + eval(pars['lhs']).first;
-    if(name == 'pop') {
-      scratch.removeLast();
-      return;
+  funcall(name, List pars) {
+    if (true /* not macro */) {
+      pars = pars.map((e) => eval(e)).toList();
+    }
+    if (name == 'add') {
+      return pars[0] + pars[1];
+    }
+    if (name == 'list') {
+      return pars;
     }
   }
 
   parseSpec(String string) sync* {
-    if(string.isEmpty) {
+    if (string.isEmpty) {
       yield "";
       return;
     }
     final first = string[0];
     final rest = string.substring(1);
-    switch(string[0]) {
+    switch (string[0]) {
       case '\'':
         yield rest;
         return;
@@ -81,7 +83,8 @@ class Evaluator {
         yield scratch[int.parse(rest)];
         return;
       case '~':
-      default: return;
+      default:
+        return;
     }
   }
 }
