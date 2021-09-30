@@ -54,5 +54,13 @@ void main() {
         ['text', 1.0]
       ]);
     });
+
+    // TODO: more than 2-parameter functions (e.g. add)
+    // TODO: xpath selection
+    // TODO: build a Map
+    // TODO: custom functions
+    // TODO: if-elseif-else
+    // TODO: variables (keep track of global and local context)
+    // TODO: loops (forEach / for / while)
   });
 }
