@@ -35,18 +35,6 @@ class Evaluator {
     }
   }
 
-  funcall(name, List pars) {
-    if (true /* not macro */) {
-      pars = pars.map((e) => eval(e)).toList();
-    }
-    if (name == 'add') {
-      return pars[0] + pars[1];
-    }
-    if (name == 'list') {
-      return pars;
-    }
-  }
-
   parseSpec(String str) {
     if (str.startsWith('\'') && str.endsWith('\'')) {
       return str.substring(1, str.length - 1);
