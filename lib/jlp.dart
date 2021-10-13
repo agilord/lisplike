@@ -2,18 +2,6 @@ import 'dart:convert';
 
 import 'slib.dart';
 
-abstract class Func {
-  Future call(Stream data, List stack, Map args);
-}
-
-class Adder extends Func {
-  @override
-  call(data, stack, args) async {
-    final rhs = args["rhs"];
-    final lhs = args["lhs"];
-  }
-}
-
 class Evaluator {
   Map<String, dynamic> state;
   Evaluator._(this.state);
@@ -21,11 +9,10 @@ class Evaluator {
     return Evaluator._(Map<String, dynamic>.from(state ??
         {
           'var': {},
-          'hand': {},
-          'call': [],
-          'top': null,
         }));
   }
+
+
 
   eval(elem) {
     if (elem is List) {
@@ -67,8 +54,16 @@ class Evaluator {
     final first = str[0];
     final rest = str.substring(1);
     switch (first) {
-      case '\$':
-        return state['vars'][rest];
+      case '&':
+        {
+          final vr = this.eval(["rawresolv", rest]);
+          return vr;
+        }
+      case '%':
+        {
+          final vr = this.eval(["rawresolv", rest]);
+          return this.eval(vr);
+        }
     }
     return str;
   }

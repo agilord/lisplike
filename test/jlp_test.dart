@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:jlp/jlp.dart';
 import 'package:test/test.dart';
 
@@ -97,6 +99,28 @@ void main() {
           ]
         }
       ]);
+    });
+
+
+    test('simple function test', () {
+      final res = Evaluator().eval([
+        'rawbegin',
+        ['rawdefine', 'fibstep', [
+          'rawbegin',
+          ['define', 'c', ['add', '&a', '&b']],
+          ['define', 'a', '&b'],
+          ['define', 'b', '&c'],
+          '&c',
+        ]],
+        ['rawdefine', 'a', 1],
+        ['rawdefine', 'b', 1],
+        '%fibstep', // 2
+        '%fibstep', // 3
+        '%fibstep', // 5
+        '%fibstep', // 8
+        '%fibstep', // 13
+      ]);
+      expect(res, 13);
     });
 
     // TODO: more than 2-parameter functions (e.g. add)
