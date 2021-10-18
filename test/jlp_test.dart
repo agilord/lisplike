@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:jlp/jlp.dart';
 import 'package:test/test.dart';
 
@@ -19,12 +21,12 @@ void main() {
 
   group('lisplike', () {
     test('add', () {
-      final res = Evaluator(['add', 8, 9.1]).run();
+      final res = Evaluator().eval(['add', 8, 9.1]);
       expect(res, 17.1);
     });
 
     test('multi-level add', () {
-      final res = Evaluator([
+      final res = Evaluator().eval([
         'add',
         ['add', 1, 7],
         [
@@ -32,27 +34,93 @@ void main() {
           ['add', 8, 1],
           0.1,
         ],
-      ]).run();
+      ]);
       expect(res, 17.1);
     });
 
     test('list', () {
-      final res = Evaluator(['list', 1, true, 'text']).run();
+      final res = Evaluator().eval(['list', 1, true, 'text']);
       expect(res, [1, true, 'text']);
     });
 
     test('multi-level list', () {
-      final res = Evaluator([
+      final res = Evaluator().eval([
         'list',
         1,
         true,
         ['list', 'text', 1.0],
-      ]).run();
+      ]);
       expect(res, [
         1,
         true,
         ['text', 1.0]
       ]);
+    });
+
+    test('raw creator tests', () {
+      final res = Evaluator().eval([
+        "list",
+        [
+          "rawpass",
+          ["or", true, false],
+          12
+        ],
+        [
+          "rawlist",
+          1,
+          ["add", 1, 2],
+          "&tata",
+        ],
+        [
+          "rawobj",
+          "a",
+          12,
+          "b",
+          [
+            "or",
+            ["eq", 12, 13],
+            ["less", 12, 13]
+          ]
+        ],
+      ]);
+      expect(res, [
+        ["or", true, false],
+        [
+          1,
+          ["add", 1, 2],
+          "&tata"
+        ],
+        {
+          "a": 12,
+          "b": [
+            "or",
+            ["eq", 12, 13],
+            ["less", 12, 13]
+          ]
+        }
+      ]);
+    });
+
+
+    test('simple function test', () {
+      final res = Evaluator().eval([
+        'rawbegin',
+        ['rawdefine', 'fibstep', [
+          'rawbegin',
+          ['define', 'c', ['add', '&a', '&b']],
+          ['define', 'a', '&b'],
+          ['define', 'b', '&c'],
+          '&c',
+        ]],
+        ['rawdefine', 'a', 1],
+        ['rawdefine', 'b', 1],
+        '%fibstep', // 2
+        '%fibstep', // 3
+        '%fibstep', // 5
+        '%fibstep', // 8
+        '%fibstep', // 13
+      ]);
+      expect(res, 13);
     });
 
     // TODO: more than 2-parameter functions (e.g. add)
