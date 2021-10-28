@@ -9,22 +9,23 @@ class Evaluator {
     return Evaluator._(Map<String, dynamic>.from(state ??
         {
           'var': {},
+          'parslist': [], // pars list
+          'funlist': [], // function list
         }));
   }
-
-
 
   eval(elem) {
     if (elem is List) {
       final name = elem.first;
       final pars = elem.sublist(1);
-      return rcall(name, pars, this);
+      final val = rcall(name, pars, this);
+      return val;
     }
     if (elem is String) {
       return parseSpec(elem);
     }
     if (elem is num) {
-      //print(elem.runtimeType); // can be int or double
+      //print(elem.runtimeType); // can be int or double if converted from JSON
       return elem.toDouble();
     }
     if (elem is Map) {
