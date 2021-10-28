@@ -61,7 +61,7 @@ void main() {
       final res = Evaluator().eval([
         "list",
         [
-          "rawpass",
+          "rawfirst",
           ["or", true, false],
           12
         ],
@@ -123,12 +123,24 @@ void main() {
       expect(res, 13);
     });
 
-    // TODO: more than 2-parameter functions (e.g. add)
-    // TODO: xpath selection
-    // TODO: build a Map
+    // TODO: call from variable
+    test('deep function test', (){
+      final res = Evaluator().eval([
+        'rawbegin',
+        [
+          [
+            'rawevalup',
+            'rawplus',
+          ],
+          1,
+          2,
+        ]
+      ]);
+      expect(3, res);
+    });
+
     // TODO: custom functions
     // TODO: if-elseif-else
-    // TODO: variables (keep track of global and local context)
     // TODO: loops (forEach / for / while)
   });
 }
