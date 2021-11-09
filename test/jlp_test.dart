@@ -57,22 +57,22 @@ void main() {
       ]);
     });
 
-    test('raw creator tests', () {
+    test(': creator tests', () {
       final res = Evaluator().eval([
         "list",
         [
-          "rawfirst",
+          ":pass",
           ["or", true, false],
           12
         ],
         [
-          "rawlist",
+          ":list",
           1,
           ["add", 1, 2],
           "&tata",
         ],
         [
-          "rawobj",
+          ":obj",
           "a",
           12,
           "b",
@@ -101,46 +101,78 @@ void main() {
       ]);
     });
 
-
     test('simple function test', () {
       final res = Evaluator().eval([
-        'rawbegin',
-        ['rawdefine', 'fibstep', [
-          'rawbegin',
-          ['define', 'c', ['add', '&a', '&b']],
-          ['define', 'a', '&b'],
-          ['define', 'b', '&c'],
-          '&c',
-        ]],
-        ['rawdefine', 'a', 1],
-        ['rawdefine', 'b', 1],
-        '%fibstep', // 2
-        '%fibstep', // 3
-        '%fibstep', // 5
-        '%fibstep', // 8
-        '%fibstep', // 13
+        'do',
+        [
+          ':define',
+          'fibstep',
+          [
+            'lambda',
+            [],
+            [
+              'do',
+              [
+                'define',
+                'c',
+                ['add', '&a', '&b']
+              ],
+              ['define', 'a', '&b'],
+              ['up', 'a'],
+              ['define', 'b', '&c'],
+              ['up', 'b'],
+              '&c',
+            ]
+          ]
+        ],
+        [':define', 'a', 1],
+        [':define', 'b', 1],
+        ['&fibstep'], // 2
+        ['&fibstep'], // 3
+        ['&fibstep'], // 5
+        ['&fibstep'], // 8
+        ['&fibstep'], // 13
+        // TODO: unknown error
       ]);
       expect(res, 13);
     });
 
     // TODO: call from variable
-    test('deep function test', (){
+    test('deep function test', () {
       final res = Evaluator().eval([
-        'rawbegin',
+        'do',
         [
+          ':define',
+          'fib',
           [
-            'rawevalup',
-            'rawplus',
-          ],
-          1,
-          2,
-        ]
+            'lambda',
+            ['n'],
+            [
+              ':if',
+              ['less', '&n', 1],
+              1,
+              [
+                'add',
+                [
+                  '&fib',
+                  ['sub', '&n', 1]
+                ],
+                [
+                  '&fib',
+                  ['sub', '&n', 2]
+                ]
+              ]
+            ]
+          ]
+        ],
+        ['&fib', 5],
       ]);
-      expect(3, res);
+      expect(res, 13);
     });
 
     // TODO: custom functions
     // TODO: if-elseif-else
     // TODO: loops (forEach / for / while)
+    // TODO: comments for tests, why they work?
   });
 }
