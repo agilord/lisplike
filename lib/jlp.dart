@@ -86,12 +86,7 @@ class Evaluator {
         {
           final vr = this.eval([":resolve", rest]);
           return vr;
-        }/*
-      case '%':
-        {
-          final vr = this.eval([":resolv", rest]);
-          return this.eval(vr);
-        }*/
+        }
       case ':':
         return ["macrocall", rest];
     }

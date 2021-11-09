@@ -11,7 +11,7 @@ There is an `Evaluator` class, which handles state and has an `eval` function.
 
 ### Resolution:
 
-- `"'asd'"` should resolve to the string `"asd"`.
+- `"'asd"` should resolve to the string `"asd"`.
 - `"&asd"` should resolve to the variable named `asd`.
 - if `"x"` in `"xasd"` is alphanumerical, it should resolve as-is
 
@@ -27,8 +27,8 @@ If no rule matches, it should just return the string as-is.
   3. find base function, and run it.
   4. error?
 - If `head` is a list...
-  1. and `["lambda" ...]`, eval parameters, and run lambda.
-  2. and `["macro" ...]`, run with raw parameters, the eval the returned function.
+  1. and `["lambda", ...]`, eval parameters, and run lambda.
+  2. and `["macrocall", ...]`, run with raw parameters, the eval the returned function.
   3. error?
 
   
