@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'slib.dart';
 
 class Evaluator {
@@ -12,10 +10,10 @@ class Evaluator {
   }
 
   _funceval(name, List pars) {
-    if(name is String) {
+    if (name is String) {
       return bfuns[name]!(pars, this);
     }
-    if(name is List) {
+    if (name is List) {
       vars = {"#up": vars};
       final parnames = name[1];
       final body = name[2];
@@ -36,22 +34,23 @@ class Evaluator {
       // name resolution
       while (name is String) {
         final val = parseStr(name);
-        if (val == name)
+        if (val == name) {
           break; // fix point
-        else
+        } else {
           name = val;
+        }
       }
 
       // Base function call
       if (name is String) {
-        for(int i = 0; i < pars.length; ++i) {
+        for (int i = 0; i < pars.length; ++i) {
           pars[i] = eval(pars[i]);
         } // eval pars
         return _funceval(name, pars);
       }
       // lambda function call
       if (name is List && name[0] == 'lambda') {
-        for(int i = 0; i < pars.length; ++i) {
+        for (int i = 0; i < pars.length; ++i) {
           pars[i] = eval(pars[i]);
         } // eval pars
         return _funceval(name, pars);
@@ -84,7 +83,7 @@ class Evaluator {
         return rest;
       case '&':
         {
-          final vr = this.eval([":resolve", rest]);
+          final vr = eval([":resolve", rest]);
           return vr;
         }
       case ':':

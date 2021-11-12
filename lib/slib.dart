@@ -1,7 +1,5 @@
 // ["add", x, y] -> dart: add(x, y)
 
-import 'dart:io';
-
 import 'package:jlp/jlp.dart';
 
 typedef Fun = dynamic Function(List pars, Evaluator ctx);
@@ -36,7 +34,7 @@ final bfuns = <String, Fun>{
     final name = pars[0];
     final times = pars.length >= 2 ? pars[1] : 1;
     var now = ctx.vars;
-    while (now != null && !now.keys.contains(name)) {
+    while (!now.keys.contains(name)) {
       now = now["#up"];
     }
     for (var i = 0; i < times && now["#up"] is Map; ++i) {
@@ -63,7 +61,7 @@ final bfuns = <String, Fun>{
   'while': (pars, ctx) {
     final cond = pars[0];
     final body = pars[1];
-    var data = null;
+    dynamic data;
     while (ctx.eval(cond)) {
       data = ctx.eval(body);
     }
