@@ -1,5 +1,62 @@
 import 'slib.dart';
 
+class VarScope {
+  Map<String, dynamic> vars;
+  VarScope? parent;
+  VarScope._(this.vars, this.parent);
+  factory VarScope({Map<String, dynamic>? vars, VarScope? parent}) {
+    vars ??= {if (parent != null) "#up": parent.vars};
+    return VarScope._(vars, parent);
+  }
+
+  getvar(String varname) {
+    if (vars.containsKey(varname)) {
+      return vars[varname];
+    }
+    if (parent != null) {
+      return parent!.getvar(varname);
+    }
+    // error
+    return null;
+  }
+
+  wherevar(String varname) {
+    return vars.containsKey(varname)
+        ? 0
+        : (parent == null ? -1 : 1 + parent!.wherevar(varname));
+  }
+
+  setvar(String varname, value) {
+    return vars[varname] = value;
+  }
+
+  setrecvar(String varname, value) {
+    final lvl = wherevar(varname);
+    if (lvl < 0) {
+      vars[varname] = varname;
+    } else {
+      VarScope ps = this;
+      while (lvl >= 0) {
+        ps = ps.parent!;
+      }
+      ps.vars[varname] = value;
+    }
+  }
+
+  moveup(String varname, [int levels = 1]) {
+    VarScope ps = this;
+    while (ps.parent != null && !ps.vars.containsKey(varname)) {
+      ps = ps.parent!;
+    }
+    final val = ps.vars[varname];
+    while (levels >= 0 && ps.parent != null) {
+      ps.vars.remove(varname);
+      ps = ps.parent!;
+    }
+    return ps.vars[varname] = val;
+  }
+}
+
 class Evaluator {
   Map<String, dynamic> state;
   Map<String, dynamic> vars;
