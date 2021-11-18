@@ -58,12 +58,12 @@ class VarScope {
 }
 
 class Evaluator {
-  Map<String, dynamic> state;
-  Map<String, dynamic> vars;
-  Evaluator._(this.state, this.vars);
-  factory Evaluator([Map<String, dynamic>? state]) {
-    state ??= {'vars': <String, dynamic>{}};
-    return Evaluator._(state, state["vars"]);
+  VarScope root;
+  VarScope scope;
+  Evaluator._(this.root, this.scope);
+  factory Evaluator([VarScope? root]) {
+    root ??= VarScope();
+    return Evaluator._(root, root);
   }
 
   _funceval(name, List pars) {
@@ -71,14 +71,14 @@ class Evaluator {
       return bfuns[name]!(pars, this);
     }
     if (name is List) {
-      vars = {"#up": vars};
+      scope = VarScope(parent: scope);
       final parnames = name[1];
       final body = name[2];
       for (var i = 0; i < parnames.length; ++i) {
-        vars[parnames[i]] = pars[i];
+        scope.setvar(parnames[i], pars[i]);
       }
       final ret = eval(body);
-      vars = vars["#up"];
+      scope = (scope);
       return ret;
     }
   }

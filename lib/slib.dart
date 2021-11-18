@@ -8,39 +8,25 @@ final bfuns = <String, Fun>{
   // Memory handling
   'define': (pars, ctx) {
     assert(pars[0] is String, 'rawdefine: not string key');
-    ctx.vars[pars[0]] = pars[1];
+    ctx.scope.setvar(pars[0], pars[1]);
     return '&${pars[0]}';
   },
   'resolve': (pars, ctx) {
-    var now = ctx.vars;
-    while (now is Map) {
-      if (now.containsKey(pars[0])) {
-        return now[pars[0]];
-      }
-      now = now["#up"];
-    }
-    assert(false, 'rawresolv: not found, ${ctx.state}'); // or maybe just null?
-    return null;
+    return ctx.scope.getvar(pars[0]);
   },
   'new_scope': (pars, ctx) {
-    ctx.vars = {"#up": ctx.vars};
+    final vars = pars.length >= 1 ? pars[0] : {};
+    ctx.scope = VarScope(parent: ctx.scope, vars: vars);
     return null;
   },
   'del_scope': (pars, ctx) {
-    ctx.vars = ctx.vars["#up"];
+    ctx.scope = ctx.scope.parent!;
     return null;
   },
   'up': (pars, ctx) {
     final name = pars[0];
     final times = pars.length >= 2 ? pars[1] : 1;
-    var now = ctx.vars;
-    while (!now.keys.contains(name)) {
-      now = now["#up"];
-    }
-    for (var i = 0; i < times && now["#up"] is Map; ++i) {
-      now["#up"][name] = now[name];
-      now = now["#up"];
-    }
+    ctx.scope.moveup(name, times);
     return null;
   },
 
