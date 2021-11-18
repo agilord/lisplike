@@ -78,7 +78,7 @@ class Evaluator {
         scope.setvar(parnames[i], pars[i]);
       }
       final ret = eval(body);
-      scope = (scope);
+      scope = scope.parent!;
       return ret;
     }
   }
