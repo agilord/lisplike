@@ -1,12 +1,69 @@
 import 'slib.dart';
 
-class Evaluator {
-  Map<String, dynamic> state;
+class VarScope {
   Map<String, dynamic> vars;
-  Evaluator._(this.state, this.vars);
-  factory Evaluator([Map<String, dynamic>? state]) {
-    state ??= {'vars': <String, dynamic>{}};
-    return Evaluator._(state, state["vars"]);
+  VarScope? parent;
+  VarScope._(this.vars, this.parent);
+  factory VarScope({Map<String, dynamic>? vars, VarScope? parent}) {
+    vars ??= {if (parent != null) "#up": parent.vars};
+    return VarScope._(vars, parent);
+  }
+
+  getvar(String varname) {
+    if (vars.containsKey(varname)) {
+      return vars[varname];
+    }
+    if (parent != null) {
+      return parent!.getvar(varname);
+    }
+    // error
+    return null;
+  }
+
+  wherevar(String varname) {
+    return vars.containsKey(varname)
+        ? 0
+        : (parent == null ? -1 : 1 + parent!.wherevar(varname));
+  }
+
+  setvar(String varname, value) {
+    return vars[varname] = value;
+  }
+
+  setrecvar(String varname, value) {
+    final lvl = wherevar(varname);
+    if (lvl < 0) {
+      vars[varname] = varname;
+    } else {
+      VarScope ps = this;
+      while (lvl >= 0) {
+        ps = ps.parent!;
+      }
+      ps.vars[varname] = value;
+    }
+  }
+
+  moveup(String varname, [int levels = 1]) {
+    VarScope ps = this;
+    while (ps.parent != null && !ps.vars.containsKey(varname)) {
+      ps = ps.parent!;
+    }
+    final val = ps.vars[varname];
+    while (levels >= 0 && ps.parent != null) {
+      ps.vars.remove(varname);
+      ps = ps.parent!;
+    }
+    return ps.vars[varname] = val;
+  }
+}
+
+class Evaluator {
+  VarScope root;
+  VarScope scope;
+  Evaluator._(this.root, this.scope);
+  factory Evaluator([VarScope? root]) {
+    root ??= VarScope();
+    return Evaluator._(root, root);
   }
 
   _funceval(name, List pars) {
@@ -14,14 +71,14 @@ class Evaluator {
       return bfuns[name]!(pars, this);
     }
     if (name is List) {
-      vars = {"#up": vars};
+      scope = VarScope(parent: scope);
       final parnames = name[1];
       final body = name[2];
       for (var i = 0; i < parnames.length; ++i) {
-        vars[parnames[i]] = pars[i];
+        scope.setvar(parnames[i], pars[i]);
       }
       final ret = eval(body);
-      vars = vars["#up"];
+      scope = scope.parent!;
       return ret;
     }
   }
