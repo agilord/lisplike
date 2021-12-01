@@ -12,7 +12,7 @@ final bfuns = <String, Fun>{
     return '&${pars[0]}';
   },
   'resolve': (pars, ctx) {
-    return ctx.scope.getvar(pars[0]);
+    return ctx.scope.resolv(pars[0]);
   },
   'new_scope': (pars, ctx) {
     final vars = pars.length >= 1 ? pars[0] : {};

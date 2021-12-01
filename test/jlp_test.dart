@@ -168,9 +168,5 @@ void main() {
       expect(res, 13);
     });
 
-    // TODO: custom functions
-    // TODO: if-elseif-else
-    // TODO: loops (forEach / for / while)
-    // TODO: comments for tests, why they work?
   });
 }

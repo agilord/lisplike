@@ -1,59 +1,115 @@
 import 'slib.dart';
 
-class VarScope {
+abstract class Scope {
+  String get name;
+  Scope? parent;
+  Scope();
+  Scope._(this.parent);
+  hasVar(String name) => false;
+  getVar(String name) => ArgumentError("get $name at wrong place");
+  setVar(String name, value) => parent!.setVar(name, value);
+
+  resolv(String name) {
+    if(this.hasVar(name)) return getVar(name);
+    else return parent!.resolv(name);
+  }
+  moveUpValue(String name, value, [int level = 1]) {
+    if(this.hasVar(name)) {
+      this.setVar(name, value);
+      level -= 1;
+    }
+    if(level > 0) {
+      parent!.moveUpValue(name, value);
+    }
+  }
+  moveUp(String name, [int level = 1]) {
+    if(this.hasVar(name)) {
+      final value = this.getVar(name);
+      moveUpValue(name, value, level);
+    }
+  }
+}
+
+// May contain native functions, i.e. `add`, `mul`
+class NativeScope extends Scope {
+  @override
+  String get name => 'nativescpe';
+
+  // TODO: native functions
+}
+
+// Just in-language variables
+class VarScope extends Scope {
+  @override
+  String get name => 'varscope';
   Map<String, dynamic> vars;
-  VarScope? parent;
-  VarScope._(this.vars, this.parent);
-  factory VarScope({Map<String, dynamic>? vars, VarScope? parent}) {
-    vars ??= {if (parent != null) "#up": parent.vars};
+  VarScope._(this.vars, Scope? parent) : super._(parent);
+  factory VarScope({Map<String, dynamic>? vars, Scope? parent}) {
+    vars ??= {if (parent != null) "#up": parent};
     return VarScope._(vars, parent);
   }
 
-  getvar(String varname) {
-    if (vars.containsKey(varname)) {
-      return vars[varname];
-    }
-    if (parent != null) {
-      return parent!.getvar(varname);
-    }
-    // error
-    return null;
+  @override hasVar(String varname) {
+    return vars.containsKey(varname);
   }
-
-  wherevar(String varname) {
-    return vars.containsKey(varname)
-        ? 0
-        : (parent == null ? -1 : 1 + parent!.wherevar(varname));
+  @override getVar(String name) {
+    return vars[name];
   }
-
-  setvar(String varname, value) {
-    return vars[varname] = value;
+  @override setVar(String name, value) {
+    return vars[name] = value;
   }
+}
 
-  setrecvar(String varname, value) {
-    final lvl = wherevar(varname);
-    if (lvl < 0) {
-      vars[varname] = varname;
-    } else {
-      VarScope ps = this;
-      while (lvl >= 0) {
-        ps = ps.parent!;
+abstract class Evaler extends Scope {
+  eval();
+}
+
+// For ex. storing results, etc.
+class ValueEval extends Evaler {
+  @override
+  String get name => 'valueeval';
+  dynamic value;
+  ValueEval(this.value);
+  eval() => eval_from_Evaluator(value);
+}
+
+class FuncEval extends Evaler {
+  @override
+  String get name => 'funceval';
+  FuncEval(this.func, this.pars);
+  dynamic func;
+  dynamic pars;
+  // TODO extract _funceval
+  eval() {
+
+  }
+}
+
+class StringEval extends Evaler {
+  @override String get name => 'stringeval';
+  String str;
+  StringEval(this.str)
+  // TODO extract parseStr
+  @override eval() {
+
+  }
+}
+
+class BlockEval extends Evaler {
+  @override
+  String get name => 'blockeval';
+  List<dynamic> elems;
+  BlockEval(this.elems);
+  factory BlockEval.evalAll(List<dynamic> vals) {
+    return BlockEval(vals.map((e) => ValueEval(e)).toList()); 
+  }
+  eval() {
+    for(var i = 0; i < elems.length; ++i) {
+      while(elems[i] is Evaler) {
+        elems[i] = elems[i].eval();
       }
-      ps.vars[varname] = value;
     }
-  }
-
-  moveup(String varname, [int levels = 1]) {
-    VarScope ps = this;
-    while (ps.parent != null && !ps.vars.containsKey(varname)) {
-      ps = ps.parent!;
-    }
-    final val = ps.vars[varname];
-    while (levels >= 0 && ps.parent != null) {
-      ps.vars.remove(varname);
-      ps = ps.parent!;
-    }
-    return ps.vars[varname] = val;
+    return elems;
   }
 }
 
