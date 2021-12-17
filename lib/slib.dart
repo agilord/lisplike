@@ -2,31 +2,34 @@
 
 import 'package:jlp/jlp.dart';
 
-typedef Fun = dynamic Function(List pars, Evaluator ctx);
+typedef Fun = dynamic Function(List pars, Scope ctx);
+
 
 final bfuns = <String, Fun>{
   // Memory handling
   'define': (pars, ctx) {
     assert(pars[0] is String, 'rawdefine: not string key');
-    ctx.scope.setvar(pars[0], pars[1]);
+    ctx.setVar(pars[0], pars[1]);
     return '&${pars[0]}';
   },
   'resolve': (pars, ctx) {
-    return ctx.scope.getvar(pars[0]);
+    return ctx.resolv(pars[0]);
   },
   'new_scope': (pars, ctx) {
+    return null; // TODO
     final vars = pars.length >= 1 ? pars[0] : {};
-    ctx.scope = VarScope(parent: ctx.scope, vars: vars);
+    //ctx = VarScope(parent: ctx.scope, vars: vars);
     return null;
   },
   'del_scope': (pars, ctx) {
-    ctx.scope = ctx.scope.parent!;
+    return null; /// TODO
+    //ctx.scope = ctx.scope.parent!;
     return null;
   },
   'up': (pars, ctx) {
     final name = pars[0];
     final times = pars.length >= 2 ? pars[1] : 1;
-    ctx.scope.moveup(name, times);
+    ctx.moveUp(name, times);
     return null;
   },
 
@@ -34,6 +37,7 @@ final bfuns = <String, Fun>{
   'do': (pars, ctx) {
     return pars.last;
   },
+  /* TODO
   'if': (pars, ctx) {
     final cond = pars[0];
     final succ = pars[1];
@@ -53,6 +57,7 @@ final bfuns = <String, Fun>{
     }
     return data;
   },
+  */
 
   // Element creators
   'pass': (pars, ctx) => pars[0],
@@ -67,7 +72,9 @@ final bfuns = <String, Fun>{
     }
     return Map<String, dynamic>.unmodifiable(ret);
   },
+//};
 
+//final opfuns = <String, Fun> {
   // Operator calls
   'add': (pars, ctx) => pars[0] + pars[1],
   'sub': (pars, ctx) => pars[0] - pars[1],
@@ -77,6 +84,8 @@ final bfuns = <String, Fun>{
   'eq': (pars, ctx) => pars[0] == pars[1],
   'less': (pars, ctx) => pars[0] < pars[1],
   'greater': (pars, ctx) => pars[0] > pars[1],
+  'leq': (pars, ctx) => pars[0] <= pars[1],
+  'geq': (pars, ctx) => pars[0] >= pars[1],
   'not': (pars, ctx) => !pars[0],
   'or': (pars, ctx) => pars[0] | pars[1],
   'and': (pars, ctx) => pars[0] & pars[1],
