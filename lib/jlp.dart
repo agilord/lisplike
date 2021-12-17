@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'slib.dart';
 
 abstract class Scope {
@@ -38,9 +40,17 @@ abstract class Scope {
 class NativeScope extends Scope {
   @override
   String get name => 'nativescpe';
-  NativeScope(Scope? parent) : super(parent);
+  final funs;
+  NativeScope(this.funs, [Scope? parent]) : super(parent);
 
-  // TODO: native functions
+  @override
+  hasVar(String name) {
+    return funs.containsKey(name);
+  }
+  @override
+  getVar(String name) {
+    return funs[name];
+  }
 }
 
 // Just in-language variables
@@ -75,12 +85,30 @@ abstract class Evaler extends Scope {
   eval();
 }
 
+class EvPos {
+  Evaler ev;
+  dynamic pos;
+  EvPos(this.ev, this.pos);
+}
+
 // For ex. storing results, etc.
 class ValueEval extends Evaler {
   @override
   String get name => 'valueeval';
   dynamic value;
   ValueEval(this.value, Scope? parent) : super(parent);
+
+  @override
+  hasVar(String name) =>
+    name == value;
+
+  getVar(String name) =>
+     (name == 'value') ? value : null;
+
+  setVar(String name, value) =>
+     (name == 'value') ? this.value = value :
+      parent!.setVar(name, value);
+
 
   @override
   eval() {
@@ -93,7 +121,7 @@ class ValueEval extends Evaler {
         name = StringEval(name, this);
       }
 
-      return FuncEval(name, pars, this);
+      return ListEval(name, pars, this);
     }
 
     if (value is String) {
@@ -109,29 +137,62 @@ class ValueEval extends Evaler {
   }
 }
 
-class FuncEval extends Evaler {
+class ListEval extends Evaler {
   @override
-  String get name => 'funceval';
-  FuncEval(this.func, this.pars, Scope? parent) : super(parent);
-  dynamic func;
-  dynamic pars;
+  String get name => 'listeval';
+  ListEval(this.head, this.tail, Scope? parent) : super(parent);
+  dynamic head;
+  dynamic tail;
   @override
-  eval() {
-    while (func is Evaler) {
-      func = func.eval();
+  hasVar(String name) => {'head', 'tail'}.contains(name);
+  getVar(String name) {
+    if (name == 'head') return head;
+    if (name == 'tail') return tail;
+  }
+
+  setVar(String name, value) {
+    if (name == 'head') return head = value;
+    if (name == 'tail') return tail = value;
+    return parent!.setVar(name, value);
+  }
+
+  @override
+  eval([pos]) {
+    if (head is Evaler) {
+      return EvPos(head, 'head');
     }
 
-    if (func is List && func[0] == 'macrocall') {
-      func = ValueEval(func[1], this);
-      while (func is Evaler) {
-        func = func.eval();
-      }
+    if (head is List && head[0] == 'macrocall') {
+      final newHead = ValueEval(head[1], this);
+      return MacroEval(newHead, tail, parent);
     } else {
-      pars = BlockEval(pars, this);
+      final newPars = BlockEval(tail, this);
+      return FuncEval(head, newPars, parent);
     }
-    while (pars is Evaler) {
-      pars = pars.eval();
-    }
+  }
+}
+
+class FuncEval extends Evaler {
+  String get name => 'funceval';
+  dynamic func;
+  dynamic pars;
+  FuncEval(this.func, this.pars, Scope? parent) : super(parent);
+
+  hasVar(name) => {'func', 'pars'}.contains(name);
+  getVar(name) => name == 'func'
+      ? this.func
+      : name == 'pars'
+          ? this.pars
+          : null;
+  setVar(name, value) => name == 'func'
+      ? this.func = value
+      : name == 'pars'
+          ? this.pars = value
+          : parent!.setVar(name, value);
+
+  eval() {
+    if (func is Evaler) return EvPos(func, 'func');
+    if (pars is Evaler) return EvPos(pars, 'pars');
 
     if (func is Function) {
       // native call
@@ -147,12 +208,34 @@ class FuncEval extends Evaler {
   }
 }
 
+class MacroEval extends Evaler {
+  String get name => 'maccroeval';
+  dynamic func;
+  dynamic pars;
+  MacroEval(this.func, this.pars, Scope? parent) : super(parent);
+  hasVar(name) => {'func', 'pars'}.contains(name);
+  getVar(name) => name == 'func'
+      ? this.func
+      : name == 'pars'
+          ? this.pars
+          : null;
+  setVar(name, value) => name == 'func'
+      ? this.func = value
+      : name == 'pars'
+          ? this.pars = value
+          : parent!.setVar(name, value);
+  eval() {
+    if (func is Evaler) return [func, 'func'];
+    return FuncEval(func, pars, parent);
+  }
+}
+
 class StringEval extends Evaler {
   @override
   String get name => 'stringeval';
   String str;
   StringEval(this.str, Scope? parent) : super(parent);
-  // TODO extract parseStr
+
   @override
   eval() {
     final first = str[0];
@@ -166,7 +249,7 @@ class StringEval extends Evaler {
           return vr;
         }
       case ':':
-        return ["macrocall", rest];
+        return ValueEval(["macrocall", rest], parent);
     }
     return str;
   }
@@ -183,6 +266,10 @@ class BlockEval extends Evaler {
     return block;
   }
   @override
+  hasVar(String name) => name == 'elems';
+  getVar(String name) => name == 'elems' ? elems : null;
+  setVar(String name, value) => name == 'elems' ? elems = value : parent!.setVar(name, value);
+  @override
   eval() {
     for (var i = 0; i < elems.length; ++i) {
       while (elems[i] is Evaler) {
@@ -194,17 +281,39 @@ class BlockEval extends Evaler {
 }
 
 class Evaluator {
-  VarScope root;
-  Evaluator._(this.root);
-  factory Evaluator([VarScope? root]) {
-    root ??= VarScope(null);
-    return Evaluator._(root);
+  Scope root;
+  List<EvPos> tape;
+  Evaluator._(this.root, this.tape);
+  factory Evaluator({Scope? root, List<EvPos>? tape}) {
+    root ??= NativeScope(bfuns, VarScope(null));
+
+    tape ??= [];
+    return Evaluator._(root, tape);
   }
-  // evaluates "elem" in 'eval' context.
-  eval(elem) {
-    var val = ValueEval(elem, root);
-    while (val is Evaler) {
-      val = val.eval();
+
+  eval([curr]) {
+    if (curr is Evaler) {
+      // Start tape with curr
+      tape.add(EvPos(curr, null));
+    } else if (curr != null) {
+      curr = ValueEval(curr, root);
+      tape.add(EvPos(curr, null));
+    }
+
+    while (tape.isNotEmpty) {
+      final ret = tape.last.ev.eval();
+      if (ret is EvPos) {
+        // Add computablevalue to tape
+        tape.add(ret);
+      } else if (tape.last.pos != null) {
+        // Rewrite previous value on the tape
+        final backwritePos = tape.last.pos;
+        tape.removeLast();
+        tape.last.ev.setVar(backwritePos, ret);
+      } else {
+        // Stop execution
+        return ret;
+      }
     }
   }
 }

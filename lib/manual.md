@@ -1,5 +1,7 @@
 # JLP manual
 
+TODO: UPDATE
+
 ## Evaluation
 
 There is an `Evaluator` class, which handles state and has an `eval` function.
